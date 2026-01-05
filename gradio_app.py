@@ -5,7 +5,15 @@ import time
 
 import gradio as gr
 import numpy as np
-import rembg
+try:
+    import rembg
+    REMBG_AVAILABLE = True
+    print("✓ Background removal (rembg) loaded successfully")
+except Exception as e:
+    REMBG_AVAILABLE = False
+    rembg = None
+    print(f"⚠ Background removal disabled: {e}")
+    print("  Install onnxruntime-gpu or onnxruntime to enable background removal")
 import torch
 from PIL import Image
 from functools import partial
@@ -31,7 +39,7 @@ model = TSR.from_pretrained(
 model.renderer.set_chunk_size(8192)
 model.to(device)
 
-rembg_session = rembg.new_session()
+rembg_session = rembg.new_session() if REMBG_AVAILABLE else None
 
 
 def check_input_image(input_image):
@@ -47,6 +55,8 @@ def preprocess(input_image, do_remove_background, foreground_ratio):
         return image
 
     if do_remove_background:
+        if not REMBG_AVAILABLE or rembg_session is None:
+            raise gr.Error("Background removal not available. Please disable 'Remove Background'")
         image = input_image.convert("RGB")
         image = remove_background(image, rembg_session)
         image = resize_foreground(image, foreground_ratio)

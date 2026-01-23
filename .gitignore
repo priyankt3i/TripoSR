@@ -162,3 +162,4 @@ cython_debug/
 # default output directory
 output/
 outputs/
+package-lock.json
